@@ -1,0 +1,29 @@
+set term pngcairo
+set title 'Plot comparison between exponential and additive backoff with 0.5 persisitence'
+
+
+set xlabel 'DataRate (Kbps)'
+set ylabel 'Forward Delay(s)' 
+set output 'forward'
+
+plot "exp_0.5p_forward.dat"  using 1:2:3:4 lt rgb 'blue' title "Exponential Backoff 0.5 persistent" with yerrorlines,"add_0.5p_forward.dat"  using 1:2:3:4 title "Additive Backoff 0.5 persistent" lt rgb 'red' with yerrorlines 
+
+
+set term pngcairo
+set title 'Plot comparison between exponential and additive backoff with 0.5 persisitence'
+
+
+set xlabel 'DataRate (Kbps)'
+set output 'throughput'
+set ylabel 'Throughput(data kbps)' 
+plot "exp_0.5p_throughput.dat"  using 1:2:3:4 lt rgb 'blue' title "Exponential Backoff 0.5 persistent" with yerrorlines,"add_0.5p_throughput.dat"  using 1:2:3:4 title "Additive Backoff 0.5 persistent" lt rgb 'red' with yerrorlines 
+
+
+set term pngcairo
+set title 'Plot comparison between exponential and additive backoff with 0.5 persisitence'
+
+
+set xlabel 'DataRate (Kbps)'
+set output 'jitter'
+set ylabel 'Jitter' 
+plot "exp_0.5p_jitter.dat"  using 1:2:3:4 lt rgb 'blue' title "Exponential Backoff 0.5 persistent" with yerrorlines,"add_0.5p_jitter.dat"  using 1:2:3:4 title "Additive Backoff 0.5 persistent" lt rgb 'red' with yerrorlines 

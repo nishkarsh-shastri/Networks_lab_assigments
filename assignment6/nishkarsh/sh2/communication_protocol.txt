@@ -1,0 +1,14 @@
+When a new node joins the network.
+It sends the following string to the central server:
+
+NEW-MYIP
+
+When the central server receives this string,it adds the node to the existing list, generates a port number and sends it back to the node with string of format.
+
+NODE_MACHINE_ID:NODE_PORT_NO:NODE_SUCCESSOR_MACHINE_ID:NODE_SUCCESSOR_PORT_NO:NODE_PREDECESSOR_MACHINE_ID:NODE_PREDECESSOR_PORT_NO
+
+If one of the successor or predecessor is null. We will get -1 in the corresponding machine id and port number.
+
+
+After the new node gets that machine id we will follow the following protocol for communication:
+//Right now I am implementing above two without assuming sockets.	

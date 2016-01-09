@@ -1,0 +1,250 @@
+
+    fd_set master;
+    fd_set read_fds;
+
+
+
+    int fdmax;
+    int dgramSocket,tcpSocket;     // listening socket descriptor
+    int newfd;        // newly accept()ed socket descriptor
+    struct sockaddr_storage remoteaddr; // client address
+
+
+    socklen_t addrlen;
+
+    int nbytes;
+    char remoteIP[INET6_ADDRSTRLEN];
+
+
+    struct addrinfo *ai;
+
+    FD_ZERO(&master);    // clear the master and temp sets
+    FD_ZERO(&read_fds);
+
+    // get us a socket and bind it
+    memset(&hints, 0, sizeof hints);
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_DGRAM;
+    hints.ai_flags = AI_PASSIVE;
+    if ((rv = getaddrinfo(NULL,to_string(myport).c_str(), &hints, &ai)) != 0) {
+        fprintf(stderr, "selectserver: %s\n", gai_strerror(rv));
+        exit(1);
+    }
+    cout<<"Reached here 1"<<endl;
+    for(p = ai; p != NULL; p = p->ai_next) {
+        dgramSocket = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
+        if (dgramSocket < 0) { 
+            continue;
+        }       
+        // lose the pesky "address already in use" error message
+        setsockopt(dgramSocket, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
+
+        if (bind(dgramSocket, p->ai_addr, p->ai_addrlen) < 0) {
+            close(dgramSocket);
+            continue;
+        }
+
+        break;
+    }
+    if (p == NULL) {
+        fprintf(stderr, "selectserver: failed to bind\n");
+        exit(2);
+    }
+    freeaddrinfo(ai);
+
+    memset(&hints, 0, sizeof hints);
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_DGRAM;
+    hints.ai_flags = AI_PASSIVE;
+    cout<<myNode->getSuccessor()->getPort()<<endl;
+    if ((rv = getaddrinfo(NULL,to_string(myNode->getSuccessor()->getPort()).c_str(), &hints, &ai)) != 0) {
+        fprintf(stderr, "selectserver: %s\n", gai_strerror(rv));
+        exit(1);
+    }
+    cout<<"Reached here 1"<<endl;
+    for(q = ai; q != NULL; q = p->ai_next) {
+        sockfd_succ = socket(q->ai_family, q->ai_socktype, q->ai_protocol);
+        if (sockfd_succ < 0) { 
+            continue;
+        }       
+        // lose the pesky "address already in use" error message
+        setsockopt(sockfd_succ, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
+
+        if (bind(sockfd_succ, p->ai_addr, p->ai_addrlen) < 0) {
+            close(sockfd_succ);
+            continue;
+        }
+
+        break;
+    }
+    if (q == NULL) {
+        fprintf(stderr, "selectserver: failed to bind\n");
+        exit(2);
+    }
+
+    freeaddrinfo(ai);
+    cout<<"Reached here 2"<<endl;
+    memset(&hints, 0, sizeof hints);
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_flags = AI_PASSIVE;
+    if ((rv = getaddrinfo(NULL,to_string(tcpport).c_str(), &hints, &ai)) != 0) {
+        fprintf(stderr, "selectserver: %s\n", gai_strerror(rv));
+        exit(1);
+    }
+
+    for(p = ai; p != NULL; p = p->ai_next) {
+        tcpSocket = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
+        if (tcpSocket < 0) { 
+            continue;
+        }       
+        // lose the pesky "address already in use" error message
+        setsockopt(tcpSocket, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
+
+        if (bind(tcpSocket, p->ai_addr, p->ai_addrlen) < 0) {
+            close(tcpSocket);
+            continue;
+        }
+
+        break;
+    }
+    if (p == NULL) {
+        fprintf(stderr, "selectserver tcpSocket: failed to bind\n");
+        exit(2);
+    }
+
+    freeaddrinfo(ai);
+
+    if(listen(tcpSocket,10)==-1)
+    {
+        perror("tcpSocket");
+        exit(3);
+    }
+
+    //add the sockets to the master set
+
+    FD_SET(dgramSocket,&master);    
+    FD_SET(tcpSocket,&master);
+    FD_SET(0,&master);
+
+    fdmax = max(dgramSocket,tcpSocket);
+    cout<<dgramSocket<<endl;
+    cout<<tcpSocket<<endl;
+    cout<<0<<endl;
+    for(;;)
+    {
+        cout<<"INfin masti"<<endl;
+        read_fds = master; // copy it
+        if (select(fdmax+1, &read_fds, NULL, NULL, NULL) == -1) {
+            perror("select");
+            exit(4);
+        }
+        // run through the existing connections looking for data to read
+        for(i = 0; i <= fdmax; i++)
+        {
+            cout<<"found something "<<i<<endl;  
+            if (FD_ISSET(i, &read_fds)) 
+            { // we got one!!
+                if(!fork())
+                {
+                    printf("child process for %d\n",i);
+                    if (i == tcpSocket) 
+                    {
+                        // handle file sharing connections
+                        addrlen = sizeof remoteaddr;
+                        newfd = accept(tcpSocket,
+                            (struct sockaddr *)&remoteaddr,
+                            &addrlen);
+
+                        if (newfd == -1) 
+                        {
+                            perror("accept");
+                        } 
+                        else 
+                        {
+                            FD_SET(newfd, &master); // add to master set
+                            if (newfd > fdmax) 
+                            {    // keep track of the max
+                                fdmax = newfd;
+                            }
+                            printf("selectserver: new connection from %s on "
+                                "socket %d\n",
+                                inet_ntop(remoteaddr.ss_family,
+                                    get_in_addr((struct sockaddr*)&remoteaddr),
+                                    remoteIP, INET6_ADDRSTRLEN),
+                                newfd);
+                        }
+                    } 
+                    else if(i==dgramSocket)//handle dgram connections from other nodes
+                    {
+                        // handle data from a client
+                        printf("node server: waiting to recvfrom...\n"); 
+                            //Here I am assuming that central server is waiting to get a string starting with NEW
+                        addr_len = sizeof(their_addr);
+                        if((numbytes=recvfrom(dgramSocket,buf,MAXBUFLEN-1,0,(struct sockaddr*)&their_addr,&addr_len))==-1)
+                        {
+                            perror("recvfrom");
+                            exit(1);
+                        }
+                        printf("node got packet from %s\n",inet_ntop(their_addr.ss_family,get_in_addr((struct sockaddr*)&their_addr),s,sizeof s));
+                        printf("node packet is %d bytes long \n",numbytes);
+                        buf[numbytes]='\0';
+                        cout<<strdup(buf)<<endl;
+                    }
+                    else if(i==0) 
+                    {
+                            if ((nbytes = read(i, buf, sizeof buf))<=0) 
+                            {
+                                // got error or connection closed by client
+                                if (nbytes == 0) 
+                                {
+                                    // connection closed
+                                    printf("selectserver: socket %d hung up\n", i);
+                                } 
+                                else 
+                                {
+                                    perror("recv stdin");
+                                }
+                                close(i); // bye!
+                                FD_CLR(i, &master); // remove from master set
+                            }
+                            else
+                            {
+                                buf[nbytes-1]='\0';
+                                cout<<"received from stdin::"<<buf<<endl;
+                                cout<<"value"<<endl;
+                            }
+                            cout<<"Now"<<endl;
+                            cout<<"HIEHLJF"<<endl;
+
+                            if ((numbytes = sendto(dgramSocket,buf,MAXBUFLEN,0,q->ai_addr, q->ai_addrlen)) == -1) 
+                            {
+                                printf("EXiting\n");
+                                perror("talker: sendto");
+                                exit(1);
+                            }
+                            else
+                            {    
+                                cout<<q->ai_addr<<" and "<<q->ai_addrlen<<endl;
+                                cout<<"Sent the buffer to "<<dgramSocket<<endl;
+                                break;
+                            }                    
+
+                    } 
+                }// END handle data from client
+            } // END got new incoming connection
+        } // END looping through file descriptors
+    }
+
+
+
+
+
+
+
+
+    close(tcpSocket);
+    close(dgramSocket);
+
+    return 0;
+}

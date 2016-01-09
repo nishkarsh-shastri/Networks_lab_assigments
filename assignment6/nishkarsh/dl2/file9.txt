@@ -1,0 +1,161 @@
+#include<stdio.h>
+#include<stdlib.h>
+#include<math.h>
+
+#define undefined -1
+
+typedef struct pixel
+{
+  int r;
+  int g;
+  int b;
+}pixel;
+
+typedef struct graph
+{
+  int wt[8];
+  pixel p;
+}graph;
+
+int calc_wt_pixel(pixel p1,pixel p2)
+{
+    int m=abs(p1.r-p2.r)+abs(p1.g-p2.g)+abs(p1.b-p2.b);
+    return m;
+}
+
+int calc_wt(int dimx,int dimy,graph **g)
+{
+  int x,y;
+  for(x=0;x<dimx;x++)
+    for(y=0;y<dimy;y++)
+    {
+      if(x==0)
+          {
+              if(y==0)
+              {
+                g[x][y].wt[0]=g[x][y].wt[1]=g[x][y].wt[5]=g[x][y].wt[6]=g[x][y].wt[7]=-1;
+                g[x][y].wt[2]=calc_wt_pixel(g[x][y].p,g[x][y+1].p);
+                g[x][y].wt[3]=calc_wt_pixel(g[x][y].p,g[x+1][y+1].p);
+                g[x][y].wt[4]=calc_wt_pixel(g[x][y].p,g[x+1][y].p);
+              }
+              else if(y==dimy-1)
+              {
+                g[x][y].wt[0]=g[x][y].wt[1]=g[x][y].wt[2]=g[x][y].wt[3]=g[x][y].wt[7]=-1;
+                g[x][y].wt[4]=calc_wt_pixel(g[x][y].p,g[x+1][y].p);
+                g[x][y].wt[5]=calc_wt_pixel(g[x][y].p,g[x+1][y-1].p);
+                g[x][y].wt[6]=calc_wt_pixel(g[x][y].p,g[x][y-1].p);
+              }
+              else
+              {
+                g[x][y].wt[0]=g[x][y].wt[1]=g[x][y].wt[7]=-1;
+                g[x][y].wt[2]=calc_wt_pixel(g[x][y].p,g[x][y+1].p);
+                g[x][y].wt[3]=calc_wt_pixel(g[x][y].p,g[x+1][y+1].p);
+                g[x][y].wt[4]=calc_wt_pixel(g[x][y].p,g[x+1][y].p);
+                g[x][y].wt[5]=calc_wt_pixel(g[x][y].p,g[x+1][y-1].p);
+                g[x][y].wt[6]=calc_wt_pixel(g[x][y].p,g[x][y-1].p);
+              }
+          }
+      else if(x==dimx-1)
+      {
+            if(y==0)
+          {
+            g[x][y].wt[3]=g[x][y].wt[4]=g[x][y].wt[5]=g[x][y].wt[6]=g[x][y].wt[7]=-1;
+            g[x][y].wt[2]=calc_wt_pixel(g[x][y].p,g[x][y+1].p);
+            g[x][y].wt[0]=calc_wt_pixel(g[x][y].p,g[x-1][y].p);
+            g[x][y].wt[1]=calc_wt_pixel(g[x][y].p,g[x-1][y+1].p);
+          }
+            else if(y==dimy-1)
+          {
+            g[x][y].wt[1]=g[x][y].wt[2]=g[x][y].wt[3]=g[x][y].wt[4]=g[x][y].wt[5]=-1;
+            g[x][y].wt[0]=calc_wt_pixel(g[x][y].p,g[x-1][y].p);
+            g[x][y].wt[6]=calc_wt_pixel(g[x][y].p,g[x][y-1].p);
+            g[x][y].wt[7]=calc_wt_pixel(g[x][y].p,g[x-1][y-1].p);
+          }
+            else
+          {
+            g[x][y].wt[3]=g[x][y].wt[4]=g[x][y].wt[5]=-1;
+            g[x][y].wt[0]=calc_wt_pixel(g[x][y].p,g[x-1][y].p);
+            g[x][y].wt[1]=calc_wt_pixel(g[x][y].p,g[x-1][y+1].p);
+            g[x][y].wt[2]=calc_wt_pixel(g[x][y].p,g[x][y+1].p);
+            g[x][y].wt[6]=calc_wt_pixel(g[x][y].p,g[x][y-1].p);
+            g[x][y].wt[7]=calc_wt_pixel(g[x][y].p,g[x-1][y-1].p);
+          }
+      }
+      else if(y==0)
+      {
+        g[x][y].wt[5]=g[x][y].wt[6]=g[x][y].wt[7]=-1;
+        g[x][y].wt[0]=calc_wt_pixel(g[x][y].p,g[x-1][y].p);
+        g[x][y].wt[1]=calc_wt_pixel(g[x][y].p,g[x-1][y+1].p);
+        g[x][y].wt[2]=calc_wt_pixel(g[x][y].p,g[x][y+1].p);
+        g[x][y].wt[3]=calc_wt_pixel(g[x][y].p,g[x+1][y+1].p);
+        g[x][y].wt[4]=calc_wt_pixel(g[x][y].p,g[x+1][y].p);
+
+      }
+      else if(y==dimy-1)
+      {
+        g[x][y].wt[1]=g[x][y].wt[2]=g[x][y].wt[3]=-1;
+        g[x][y].wt[0]=calc_wt_pixel(g[x][y].p,g[x-1][y].p);
+        g[x][y].wt[4]=calc_wt_pixel(g[x][y].p,g[x+1][y].p);
+        g[x][y].wt[5]=calc_wt_pixel(g[x][y].p,g[x+1][y-1].p);
+        g[x][y].wt[6]=calc_wt_pixel(g[x][y].p,g[x][y-1].p);
+        g[x][y].wt[7]=calc_wt_pixel(g[x][y].p,g[x-1][y-1].p);
+      }
+      else
+      {
+        g[x][y].wt[0]=calc_wt_pixel(g[x][y].p,g[x-1][y].p);
+        g[x][y].wt[1]=calc_wt_pixel(g[x][y].p,g[x-1][y+1].p);
+        g[x][y].wt[2]=calc_wt_pixel(g[x][y].p,g[x][y+1].p);
+        g[x][y].wt[3]=calc_wt_pixel(g[x][y].p,g[x+1][y+1].p);
+        g[x][y].wt[4]=calc_wt_pixel(g[x][y].p,g[x+1][y].p);
+        g[x][y].wt[5]=calc_wt_pixel(g[x][y].p,g[x+1][y-1].p);
+        g[x][y].wt[6]=calc_wt_pixel(g[x][y].p,g[x][y-1].p);
+        g[x][y].wt[7]=calc_wt_pixel(g[x][y].p,g[x-1][y-1].p);
+      }
+  }
+
+}
+
+
+
+int main()
+{
+  int dimx,dimy,max_col_value;
+  char s[3];
+  int x, y;
+  FILE *rfp = fopen("original.ppm", "r"); /* r - read mode */
+  // FILE *wfp= fopen("first2.ppm","w"); /* w-write mode */
+  fgets(s,3,rfp);
+  puts(s);
+  fscanf(rfp,"%d %d",&dimx,&dimy);
+  printf("%d,%d\n",dimx,dimy);
+  fscanf(rfp,"%d",&max_col_value);
+  printf("%d\n",max_col_value);
+  graph **g = (graph**)malloc(dimx*sizeof(graph*));
+  int i,j;
+  for(i=0;i<dimx;i++)
+    {
+        g[i]=(graph*)malloc(dimy*sizeof(graph));
+    }
+  for(x=0;x<dimx;x++)
+    for(y=0;y<dimy;y++)
+      {
+        fscanf(rfp,"%d%d%d",&g[x][y].p.r,&g[x][y].p.g,&g[x][y].p.b);
+      }
+  for(x=0;x<dimx;x++)
+    for(y=0;y<dimy;y++)
+      {
+       	printf("%d %d %d\n",g[x][y].p.r,g[x][y].p.g,g[x][y].p.b);
+      }
+  calc_wt(dimx,dimy,g);
+  for(x=0;x<dimx;x++)
+    for(y=0;y<dimy;y++)
+      {
+       	for(j=0;j<8;j++)
+            printf("%d ",g[x][y].wt[j]);
+        printf("\n");
+      }
+  fclose(rfp);
+
+
+  return EXIT_SUCCESS;
+}
